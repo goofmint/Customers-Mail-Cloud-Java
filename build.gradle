@@ -1,0 +1,27 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+mainClassName = 'customersmailcloud.Test'
+
+repositories {
+    mavenCentral()
+}
+
+test {
+    useJUnitPlatform {
+        includeEngines 'junit-jupiter'
+    }
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+  compile group: 'org.json', name: 'json', version: '20090211'
+  compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.12'
+  compile "org.apache.httpcomponents:httpcore:4.2.4"
+  compile "org.apache.httpcomponents:httpmime:4.3"
+  compile "com.fasterxml.jackson.core:jackson-databind:2.3.4"
+  testCompile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.1.0'
+  testRuntime group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.1.0'
+}
