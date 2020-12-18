@@ -1,6 +1,6 @@
 package customersmailcloud;
 
-class CustomersMailCloud {
+public class CustomersMailCloud {
   private String API_USER;
   private String API_KEY;
   private String URLs[] = {
