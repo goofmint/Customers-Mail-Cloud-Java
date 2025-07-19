@@ -24,11 +24,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 public class CustomersMailCloudRequest {
   public String send(String url, CustomersMailCloudMail mail) throws CustomersMailCloudException  {
     String result = "";
     ObjectMapper mapper = new ObjectMapper();
+    mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
     try {
       String json = mapper.writeValueAsString(mail);
       StringEntity entity = new StringEntity(json, "UTF-8");

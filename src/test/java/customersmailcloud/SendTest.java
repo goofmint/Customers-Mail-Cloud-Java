@@ -40,7 +40,14 @@ public class SendTest {
       CustomersMailCloudMailAddress fromAddress = new CustomersMailCloudMailAddress();
       fromAddress.name = "Admin";
       fromAddress.address = "info@dxlabo.com";
+      
       mail.from = fromAddress;
+      mail.addHeader("X-Custom-Header", "CustomValue");
+      CustomersMailCloudMailAddress replyToAddress = new CustomersMailCloudMailAddress();
+      replyToAddress.name = "Reply To";
+      replyToAddress.address = "replyto@example.com";
+      mail.reply_to = replyToAddress;
+      mail.env_from = "envfrom@example.com";
       String id = client.send(mail);
       System.out.println(id);
     } catch (CustomersMailCloudException e) {
