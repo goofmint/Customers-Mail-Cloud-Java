@@ -21,6 +21,15 @@ public class CustomersMailCloudMail {
   public List<Map<String, String>> headers = new ArrayList<>();
   public CustomersMailCloudMailAddress from;
   public CustomersMailCloudMailAddress[] to;
+  public List<String> attachments = new ArrayList<>();
+
+  // Add attachments
+  public void addAttachment(String filePath) {
+    if (filePath == null) {
+      throw new IllegalArgumentException("File path cannot be null");
+    }
+    attachments.add(filePath);
+  }
 
   // Add headers
   public void addHeader(String key, String value) {

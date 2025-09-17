@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.sql.Timestamp;
+import java.io.File;
+import java.io.FileNotFoundException;
 import org.json.JSONObject;
 // Jackson
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,13 +34,45 @@ public class CustomersMailCloudRequest {
     ObjectMapper mapper = new ObjectMapper();
     mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
     try {
-      String json = mapper.writeValueAsString(mail);
-      StringEntity entity = new StringEntity(json, "UTF-8");
       HttpPost httpPost = new HttpPost(url);
-      httpPost.setHeader("Content-type", "application/json; charset=UTF-8");
-      httpPost.setEntity(entity);
       CloseableHttpClient client = HttpClients.createDefault();
-      CloseableHttpResponse response = client.execute(httpPost);
+      CloseableHttpResponse response;
+
+      // Check if we have attachments
+      if (mail.attachments != null && !mail.attachments.isEmpty()) {
+        // Use multipart for attachments
+        MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+        builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+
+        // Add JSON data
+        String json = mapper.writeValueAsString(mail);
+        builder.addTextBody("data", json, ContentType.APPLICATION_JSON);
+
+        // Add attachments
+        for (String filePath : mail.attachments) {
+          File file = new File(filePath);
+          if (!file.exists() || !file.isFile()) {
+            throw new CustomersMailCloudException("Attachment file not found: " + filePath);
+          }
+          builder.addBinaryBody(
+            "attachment",
+            file,
+            ContentType.APPLICATION_OCTET_STREAM,
+            file.getName()
+          );
+        }
+
+        HttpEntity entity = builder.build();
+        httpPost.setEntity(entity);
+      } else {
+        // Use JSON for no attachments
+        String json = mapper.writeValueAsString(mail);
+        StringEntity entity = new StringEntity(json, "UTF-8");
+        httpPost.setHeader("Content-type", "application/json; charset=UTF-8");
+        httpPost.setEntity(entity);
+      }
+
+      response = client.execute(httpPost);
       // 閉じる
       client.close();
       result = EntityUtils.toString(response.getEntity());
