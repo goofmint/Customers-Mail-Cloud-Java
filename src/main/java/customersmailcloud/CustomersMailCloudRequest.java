@@ -33,11 +33,10 @@ public class CustomersMailCloudRequest {
     String result = "";
     ObjectMapper mapper = new ObjectMapper();
     mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-    try {
-      HttpPost httpPost = new HttpPost(url);
-      CloseableHttpClient client = HttpClients.createDefault();
-      CloseableHttpResponse response;
 
+    HttpPost httpPost = new HttpPost(url);
+
+    try (CloseableHttpClient client = HttpClients.createDefault()) {
       // Check if we have attachments
       if (mail.attachments != null && !mail.attachments.isEmpty()) {
         // Use multipart for attachments
@@ -72,10 +71,9 @@ public class CustomersMailCloudRequest {
         httpPost.setEntity(entity);
       }
 
-      response = client.execute(httpPost);
-      // 閉じる
-      client.close();
-      result = EntityUtils.toString(response.getEntity());
+      try (CloseableHttpResponse response = client.execute(httpPost)) {
+        result = EntityUtils.toString(response.getEntity());
+      }
     } catch (IOException e) {
       System.err.println(e);
       throw new CustomersMailCloudException("ネットワークエラー");
