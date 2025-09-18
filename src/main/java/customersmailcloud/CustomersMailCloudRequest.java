@@ -43,22 +43,35 @@ public class CustomersMailCloudRequest {
         MultipartEntityBuilder builder = MultipartEntityBuilder.create();
         builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
 
-        // Add JSON data
-        String json = mapper.writeValueAsString(mail);
-        builder.addTextBody("data", json, ContentType.APPLICATION_JSON);
+        // Add individual form fields
+        builder.addTextBody("api_user", mail.api_user);
+        builder.addTextBody("api_key", mail.api_key);
+        builder.addTextBody("subject", mail.subject);
+        builder.addTextBody("text", mail.text);
+        builder.addTextBody("from", mapper.writeValueAsString(mail.from));
+        builder.addTextBody("to", mapper.writeValueAsString(mail.to));
+        if (mail.charset != null) builder.addTextBody("charset", mail.charset);
+        if (mail.reply_to != null) builder.addTextBody("reply_to", mapper.writeValueAsString(mail.reply_to));
+        if (mail.env_from != null) builder.addTextBody("env_from", mail.env_from);
+        if (mail.headers != null) builder.addTextBody("headers", mapper.writeValueAsString(mail.headers));
 
-        // Add attachments
+        // Add attachments count
+        builder.addTextBody("attachments", String.valueOf(mail.attachments.size()));
+
+        // Add attachments with correct field names (attachment1, attachment2, etc.)
+        int attachmentIndex = 1;
         for (String filePath : mail.attachments) {
           File file = new File(filePath);
           if (!file.exists() || !file.isFile()) {
             throw new CustomersMailCloudException("Attachment file not found: " + filePath);
           }
           builder.addBinaryBody(
-            "attachment",
+            "attachment" + attachmentIndex,
             file,
             ContentType.APPLICATION_OCTET_STREAM,
             file.getName()
           );
+          attachmentIndex++;
         }
 
         HttpEntity entity = builder.build();
