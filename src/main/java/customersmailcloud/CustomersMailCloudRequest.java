@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.sql.Timestamp;
+import java.io.File;
+import java.io.FileNotFoundException;
 import org.json.JSONObject;
 // Jackson
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,17 +33,60 @@ public class CustomersMailCloudRequest {
     String result = "";
     ObjectMapper mapper = new ObjectMapper();
     mapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-    try {
-      String json = mapper.writeValueAsString(mail);
-      StringEntity entity = new StringEntity(json, "UTF-8");
-      HttpPost httpPost = new HttpPost(url);
-      httpPost.setHeader("Content-type", "application/json; charset=UTF-8");
-      httpPost.setEntity(entity);
-      CloseableHttpClient client = HttpClients.createDefault();
-      CloseableHttpResponse response = client.execute(httpPost);
-      // 閉じる
-      client.close();
-      result = EntityUtils.toString(response.getEntity());
+
+    HttpPost httpPost = new HttpPost(url);
+
+    try (CloseableHttpClient client = HttpClients.createDefault()) {
+      // Check if we have attachments
+      if (mail.attachments != null && !mail.attachments.isEmpty()) {
+        // Use multipart for attachments
+        MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+        builder.setMode(HttpMultipartMode.BROWSER_COMPATIBLE);
+
+        // Add individual form fields
+        builder.addTextBody("api_user", mail.api_user);
+        builder.addTextBody("api_key", mail.api_key);
+        builder.addTextBody("subject", mail.subject);
+        builder.addTextBody("text", mail.text);
+        builder.addTextBody("from", mapper.writeValueAsString(mail.from));
+        builder.addTextBody("to", mapper.writeValueAsString(mail.to));
+        if (mail.charset != null) builder.addTextBody("charset", mail.charset);
+        if (mail.reply_to != null) builder.addTextBody("reply_to", mapper.writeValueAsString(mail.reply_to));
+        if (mail.env_from != null) builder.addTextBody("env_from", mail.env_from);
+        if (mail.headers != null) builder.addTextBody("headers", mapper.writeValueAsString(mail.headers));
+
+        // Add attachments count
+        builder.addTextBody("attachments", String.valueOf(mail.attachments.size()));
+
+        // Add attachments with correct field names (attachment1, attachment2, etc.)
+        int attachmentIndex = 1;
+        for (String filePath : mail.attachments) {
+          File file = new File(filePath);
+          if (!file.exists() || !file.isFile()) {
+            throw new CustomersMailCloudException("Attachment file not found: " + filePath);
+          }
+          builder.addBinaryBody(
+            "attachment" + attachmentIndex,
+            file,
+            ContentType.APPLICATION_OCTET_STREAM,
+            file.getName()
+          );
+          attachmentIndex++;
+        }
+
+        HttpEntity entity = builder.build();
+        httpPost.setEntity(entity);
+      } else {
+        // Use JSON for no attachments
+        String json = mapper.writeValueAsString(mail);
+        StringEntity entity = new StringEntity(json, "UTF-8");
+        httpPost.setHeader("Content-type", "application/json; charset=UTF-8");
+        httpPost.setEntity(entity);
+      }
+
+      try (CloseableHttpResponse response = client.execute(httpPost)) {
+        result = EntityUtils.toString(response.getEntity());
+      }
     } catch (IOException e) {
       System.err.println(e);
       throw new CustomersMailCloudException("ネットワークエラー");
